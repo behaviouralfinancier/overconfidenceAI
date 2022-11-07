@@ -1,0 +1,66 @@
+
+#R CODES for impulse response analysis:
+
+#to upload data from a csv or excel file:
+#TO is for trading volume and R is for Return
+
+tt = read.table("clipboard",header=TRUE,sep="\t")
+tt
+dim(tt)
+yy1<- tt$TO
+xx1<- tt$R
+yy1
+
+#To determine the options see:
+https://cran.r-project.org/web/packages/lpirfs/lpirfs.pdf 
+#LPIRFS package should be installed first:
+
+install.packages("lpirfs")
+library(lpirfs)
+library(datasets)
+yy11 = as.numeric(yy1)
+xx11 = as.numeric(xx1)
+XX <- data.frame(xx11,yy11)
+endog_data <- XX
+results_lin <- lp_lin(
+  endog_data,
+  lags_endog_lin = 2,
+  lags_criterion = NaN,
+  max_lags = NaN,
+  trend = 0,
+  shock_type = 1,
+  confint = 1.96,
+  use_nw = TRUE,
+  nw_lag = NULL,
+  nw_prewhite = FALSE,
+  adjust_se = FALSE,
+  hor = 20,
+  exog_data = NULL,
+  lags_exog = NULL,
+  contemp_data = NULL,
+  num_cores = NULL
+)
+
+plot(results_lin)
+summary(results_lin)[[1]][1]
+
+switching_data <-  endog_data$xx11
+
+
+switching_data <- if_else(dplyr::lag(endog_data$xx11) > 0.00107, 1, 0)
+switching_data[is.na(switching_data)] <- 0
+
+
+results_nl <- lp_nl(endog_data,
+                    lags_endog_lin = 2,
+                    lags_endog_nl = 2,
+                    trend = 0,
+                    shock_type = 1,
+                    confint = 1.96,
+                    hor = 20,
+                    switching = switching_data,
+                    use_logistic = TRUE,
+                    use_hp = TRUE,
+                    lambda = 107e9,
+                    gamma = 3)
+plot(results_nl)
